@@ -40,11 +40,11 @@ Frontend → API → Controller → Service → Repository/Model → MongoDB
 | D1 | 외부 API를 프론트에서 직접 호출하지 않는다 | 인증키 노출·CORS·비표준 응답. 서버는 정규화 계층 |
 | D2 | 수집(`ingest/`)과 조회(`modules/`)를 분리한다 | 수집 방식이 바뀌어도 조회 코드가 안 깨지게 |
 | D3 | Service 계층은 req/res에 의존하지 않는다 | 나중에 AI Agent가 같은 함수를 도구로 호출해야 함 |
-| D4 | 소스 어댑터 패턴 | 기관마다 응답이 다름 → 각자 공통 `Announcement`로 변환 |
+| D4 | 소스 어댑터 패턴 | 기관마다 응답이 다름 → 각자 공통 `Announcement`로 변환 (LH·수동등록(PDF) 지원 중) |
 | D5 | 저장할 값과 계산할 값을 구분한다 | 모집상태를 저장하면 접수 끝나도 "모집중"으로 남는 유령 데이터가 됨 |
 | D6 | `Announcement`(공고) / `Transaction`(실거래) / `Listing`(현재 매물)을 분리한다 | 성격이 다른 걸 한 컬렉션에 합치지 않는다 |
 | D7 | 분양과 임대를 하나의 자금 계산기로 만들지 않는다 | 지불·대출·선정 구조 자체가 다름. `분양가 × LTV` 는 틀린 계산 |
-| D8 | 자격·대출 기준은 코드가 아니라 데이터다 | 법령 개정으로 바뀜. 적용 시작일을 가진 룰 데이터로 저장 |
+| D8 | 자격·대출 기준은 코드가 아니라 데이터다 | 법령 개정으로 바뀜. 적용 시작일을 가진 룰 데이터로 저장 (아직 미착수) |
 | D9 | 대출 결과를 단정하지 않는다 | 실제 한도·금리는 은행 심사 소관. "요건에 해당" 까지만 안내 |
 | D10 | 데이터 제공 범위를 명시한다 | SH·HUG는 아직 미확보. 안내 없이 빠지면 사용자가 오해함 |
 
@@ -66,12 +66,16 @@ Frontend → API → Controller → Service → Repository/Model → MongoDB
 **가격** — `price` 단독 사용 금지
 | 용어 | 코드 이름 |
 |---|---|
-| 분양가 | `supplyPriceManwon` |
-| 실거래가 | `dealAmountManwon` |
-| 보증금 | `depositManwon` |
-| 월세 | `monthlyRentManwon` |
+| 분양가 | `supplyPriceWon` |
+| 실거래가 | `dealAmountWon` |
+| 보증금 | `depositWon` |
+| 월세 | `monthlyRentWon` |
 
-내부 저장 단위는 **만원 단위 정수**로 통일. 표시 단계에서만 "12억 3,000만원" 등으로 포맷.
+내부 저장 단위는 **원 단위 정수**로 통일한다 (초기엔 만원 단위였다가 정정 — LH 임대보증금이
+`68,801,000원`처럼 만원 단위로 안 떨어지는 값으로 와서, 반올림하면 그 차액이 영구히 사라진다).
+표시 단계에서만 `Math.floor(원값 / 10000)` 등으로 "12억 3,000만원" 포맷.
+`depositWon`/`monthlyRentWon`이 `null`인 경우는 "0원"이 아니라 "해당 기관이 API로 금액을 안 줌"이다
+(국민임대·행복주택 등은 LH가 "공고문 참조" 텍스트만 준다) — 화면에서 절대 0원처럼 표시하지 않는다.
 
 기타: 자격 산정 기준일은 오늘이 아니라 **모집공고일**. 행복주택엔 청약가점(84점)이 없다 — 그건 민영주택 일반공급 방식.
 
@@ -81,11 +85,12 @@ Frontend → API → Controller → Service → Repository/Model → MongoDB
 
 | 기관 | 공고 자동 수집 | 상태 |
 |---|---|---|
-| LH | 가능 | 3종 세트 API. **1차 대상** |
-| 청약홈 (한국부동산원) | 가능 | 분양정보 조회 서비스. 2차 |
+| LH | **구현 완료** | 목록·공급정보 API + 매일 09:00(KST) 자동 수집. 국민임대·행복주택·매입임대·전세임대(5개 유형) 포함 |
+| 청약홈 (한국부동산원) | 가능(미착수) | 분양정보 조회 서비스 — API 스펙 확보·실호출 검증 완료, 어댑터 구현은 2차 |
 | GH | 조건부 | 파일데이터만 (갱신 안 됨) |
-| SH | 못 찾음 | 공고 API 미발견 |
+| SH | 못 찾음 | 살아있는 공고 API 없음. 있는 건 갱신 안 되는 파일데이터(당첨자 커트라인 등)뿐 |
 | HUG 든든전세 | 못 찾음 | 공고 API 미발견 |
+| 수동 등록 | 가능 | 위 기관이 아직 못 다루는 공고를 PDF로 받아 사람(AI)이 읽고 `source: 'MANUAL'`로 등록 |
 
 LH 목록/상세/공급정보 API 3종의 엔드포인트, 파라미터, 응답 필드, 코드값 표는 [CLAUDE.md 6절](CLAUDE.md#6-lh-분양임대공고문-조회-api--검증된-사실)에 정리되어 있다.
 응답이 배열이고 실제 데이터가 `response[1].dsList` 에 있는 등 비표준이므로, 이 API를 다루기 전에 반드시 그쪽을 먼저 읽는다.
@@ -94,22 +99,40 @@ LH 목록/상세/공급정보 API 3종의 엔드포인트, 파라미터, 응답 
 
 ## 현재 진행 상태
 
-- 완료: LH 목록 API 명세 분석, 프로젝트 스캐폴딩 (`client`/`server`, `/api/health` 동작 확인)
-- 진행 중(API 키 없이 가능한 범위): LH 원본 응답 타입 → 언랩 → 코드 사전 → 날짜 파싱 → `Announcement` 타입 + LH 어댑터
-- 이후: Mongoose 스키마, 수집기, 조회 API, 리스트 화면, 자금 시뮬레이터, 자격 판정 엔진
+- **완료**: LH 목록·공급정보 API 수집기 + 매일 09:00(KST) 스케줄러, 공고/주택형/매입임대공급정보 Mongoose 저장,
+  공고 리스트·상세 조회 API, 와이어프레임 기반 실제 화면(공고 리스트/상세), 자금 계산기(임대 — 전세자금대출,
+  매매·분양 — 계약금/중도금/잔금 + 주택담보대출, 상환방식 3종: 만기일시·원리금균등·원금균등),
+  수동 공고 등록(MANUAL 소스)
+- **다음 후보**: 청약홈 어댑터, 매입임대·전세임대 나머지 코드 확장, 중도금대출 이자 반영, DSR/자격 판정 엔진, AI Agent 연동
 
-상세 로드맵은 [CLAUDE.md 10절](CLAUDE.md#10-현재-진행-상태).
+상세 로드맵과 각 항목의 검증 근거는 [CLAUDE.md 10절](CLAUDE.md#10-현재-진행-상태)에 시간순으로 기록되어 있다.
 
 ---
 
 ## 실행
+
+### 0. 사전 준비 — `.env`
+
+`server/.env`는 `.gitignore` 대상이라 클론해도 따라오지 않는다. `.env.example`을 복사한 뒤
+**직접 값을 채워야 실제로 동작한다** (안 채워도 서버는 뜨지만 DB·LH API 관련 기능은 전부 실패한다):
+
+```bash
+cd server
+cp .env.example .env      # PowerShell: Copy-Item .env.example .env
+```
+
+필요한 값:
+- `MONGO_URI` — MongoDB Atlas 연결 문자열 (무료 M0 클러스터 사용 중)
+- `DATA_GO_KR_KEY_ENCODED` / `DATA_GO_KR_KEY_DECODED` / `DATA_GO_KR_KEY_MODE` — 공공데이터포털 일반인증키(LH·청약홈 공용)
+- `APPLYHOME_API_BASE_URL` — 청약홈(odcloud) API 베이스 URL
+
+이 값들은 git에 올리지 않는다. 다른 컴퓨터로 옮길 때도 git이 아니라 비밀번호 관리자 등 별도의 안전한 경로로 옮긴다.
 
 ### 1. 서버
 
 ```bash
 cd server
 npm install
-cp .env.example .env      # PowerShell: Copy-Item .env.example .env
 npm run dev               # http://localhost:4000
 ```
 
@@ -123,13 +146,13 @@ npm install
 npm run dev               # http://localhost:5173
 ```
 
-브라우저에서 5173 을 열면 서버 연결 상태가 보인다.
+브라우저에서 5173 을 열면 공고 리스트/상세, 자금 계산기(임대·매매) 화면이 보인다.
 
 ### 확인
 
 ```bash
 curl http://localhost:4000/api/health
-# {"success":true,"data":{"status":"ok","env":"development","uptimeSec":3,"db":"disconnected"}}
+# {"success":true,"data":{"status":"ok","env":"development","uptimeSec":3,"db":"connected"}}
 ```
 
 ---
@@ -165,6 +188,7 @@ npx create-vite@latest client --template react-ts
 cd client
 npm install
 npm install @tanstack/react-query
+npm install react-router-dom
 npm install -D tailwindcss @tailwindcss/vite
 
 # server

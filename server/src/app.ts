@@ -1,4 +1,6 @@
 import express from 'express';
+import announcementsRouter from './modules/announcements/announcement.controller.js';
+import calculatorRouter from './modules/calculator/calculator.controller.js';
 import healthRouter from './modules/health/health.controller.js';
 import { errorHandler, notFoundHandler } from './common/errorHandler.js';
 
@@ -14,6 +16,8 @@ export function createApp() {
   app.use(express.json());
 
   app.use('/api/health', healthRouter);
+  app.use('/api/announcements', announcementsRouter);
+  app.use('/api/calculator', calculatorRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

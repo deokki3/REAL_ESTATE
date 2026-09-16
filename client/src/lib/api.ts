@@ -30,16 +30,21 @@ export class ApiError extends Error {
 }
 
 type QueryValue = string | number | boolean | undefined | null
+type QueryParams = Record<string, QueryValue | QueryValue[]>
 
-function buildUrl(path: string, params?: Record<string, QueryValue>): string {
+function buildUrl(path: string, params?: QueryParams): string {
   // 상대 경로다. 개발에서는 Vite 프록시가, 배포에서는 같은 도메인이 받는다.
   const url = `/api${path.startsWith('/') ? path : `/${path}`}`
   if (!params) return url
 
   const search = new URLSearchParams()
   for (const [key, value] of Object.entries(params)) {
-    if (value === undefined || value === null || value === '') continue
-    search.set(key, String(value))
+    const values = Array.isArray(value) ? value : [value]
+    for (const v of values) {
+      if (v === undefined || v === null || v === '') continue
+      // 서버(Express)는 같은 키를 반복하면 배열로 받는다 — region=a&region=b
+      search.append(key, String(v))
+    }
   }
   const qs = search.toString()
   return qs ? `${url}?${qs}` : url
@@ -47,10 +52,31 @@ function buildUrl(path: string, params?: Record<string, QueryValue>): string {
 
 export async function apiGet<T>(
   path: string,
-  params?: Record<string, QueryValue>,
+  params?: QueryParams,
 ): Promise<{ data: T; meta?: ApiMeta }> {
   const response = await fetch(buildUrl(path, params), {
     headers: { Accept: 'application/json' },
+  })
+
+  let body: ApiEnvelope<T>
+  try {
+    body = (await response.json()) as ApiEnvelope<T>
+  } catch {
+    throw new ApiError('INVALID_RESPONSE', `서버가 JSON이 아닌 응답을 보냈습니다 (HTTP ${response.status})`)
+  }
+
+  if (!body.success) {
+    throw new ApiError(body.error.code, body.error.message)
+  }
+
+  return { data: body.data, meta: body.meta }
+}
+
+export async function apiPost<T>(path: string, payload: unknown): Promise<{ data: T; meta?: ApiMeta }> {
+  const response = await fetch(buildUrl(path), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify(payload),
   })
 
   let body: ApiEnvelope<T>

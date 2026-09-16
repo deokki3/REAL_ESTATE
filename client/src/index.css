@@ -1,1 +1,22 @@
 @import "tailwindcss";
+
+/* "따뜻한 친근형"(Option A, 2026-08-25 와이어프레임에서 확정) 디자인 토큰. */
+:root {
+  --bg: oklch(97% 0.018 75);
+  --surface: #ffffff;
+  --tint: oklch(94% 0.02 75);
+  --text: oklch(28% 0.02 60);
+  --muted: oklch(50% 0.02 60);
+  --muted-2: oklch(65% 0.018 65);
+  --border: oklch(90% 0.015 70);
+  --closed-bg: oklch(93% 0.012 70);
+  --accent: #c9784a;
+}
+
+body {
+  font-family: 'Noto Sans KR', system-ui, -apple-system, 'Malgun Gothic', sans-serif;
+}
+
+.heading {
+  font-family: 'Gowun Dodum', 'Noto Sans KR', sans-serif;
+}

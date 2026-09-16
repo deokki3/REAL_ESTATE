@@ -1,0 +1,290 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;500;600;700&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: 'Noto Sans KR', system-ui, -apple-system, "Malgun Gothic", sans-serif; background: var(--bg); color: var(--text); }
+    .heading { font-family: 'Gowun Dodum', 'Noto Sans KR', sans-serif; }
+    a { color: var(--accent); }
+    a:hover { text-decoration: underline; }
+
+    input[type="checkbox"] { accent-color: var(--accent); width:16px; height:16px; cursor:pointer; flex-shrink:0; }
+    .check-row { display:flex; align-items:center; gap:9px; font-size:13px; color:var(--text); cursor:pointer; }
+
+    .filter-section + .filter-section { border-top:1px solid var(--border); margin-top:16px; padding-top:16px; }
+    .field-label { font-size:11.5px; color:var(--muted); font-weight:700; margin-bottom:10px; letter-spacing:0.03em; }
+
+    .badge { display:inline-flex; align-items:center; justify-content:center; padding:3px 11px; border-radius:999px; font-size:11.5px; font-weight:600; white-space:nowrap; }
+    .badge-type { background: var(--tint); color: var(--muted); }
+    .badge-status-open { background: color-mix(in oklch, var(--accent) 16%, white); color: color-mix(in oklch, var(--accent) 70%, black 10%); }
+    .badge-status-upcoming { background: var(--tint); color:var(--muted); }
+    .badge-status-closed { background: var(--closed-bg); color:var(--muted-2); }
+
+    .card { background:var(--surface); border-radius:18px; padding:18px 20px; box-shadow: 0 6px 18px -10px oklch(55% 0.08 50 / 0.35); display:flex; align-items:center; gap:18px; transition: box-shadow .15s ease; }
+    .card:hover { box-shadow: 0 10px 26px -10px oklch(55% 0.1 50 / 0.45); }
+
+    .page-btn { min-width:34px; height:34px; padding:0 4px; display:inline-flex; align-items:center; justify-content:center; border-radius:999px; border:1px solid var(--border); background:#fff; color:var(--text); font-size:13px; cursor:pointer; font-family:inherit; }
+    .page-btn.active { background:var(--accent); border-color:var(--accent); color:#fff; font-weight:700; }
+
+    .search-wrap { position:relative; }
+    .search-input { border:1px solid var(--border); border-radius:999px; padding:12px 18px 12px 40px; font-size:13.5px; font-family:inherit; color:var(--text); background:#fff; width:100%; box-shadow: 0 4px 14px -10px oklch(55% 0.08 50 / 0.4); }
+    .search-input::placeholder { color: var(--muted-2); }
+
+    .notice { display:flex; gap:10px; border-radius:16px; padding:16px 22px; background: var(--tint); color:var(--muted); font-size:13px; line-height:1.6; }
+
+    .reset-link { font-size:12px; color:var(--muted); cursor:pointer; background:none; border:none; font-family:inherit; padding:0; }
+    .reset-link:hover { color:var(--accent); text-decoration:underline; }
+
+    .chev { flex-shrink:0; color: var(--muted-2); }
+  </style>
+</helmet>
+
+<div style="--bg: oklch(97% 0.018 75); --surface:#ffffff; --tint: oklch(94% 0.02 75); --text: oklch(28% 0.02 60); --muted: oklch(50% 0.02 60); --muted-2: oklch(65% 0.018 65); --border: oklch(90% 0.015 70); --closed-bg: oklch(93% 0.012 70); --accent: {{accent}}; min-height:100%; width:100%;">
+  <div style="max-width:1200px; margin:0 auto; padding:36px 32px 56px; display:flex; flex-direction:column; gap:22px;">
+
+    <div>
+      <h1 class="heading" style="margin:0 0 6px; font-size:24px; font-weight:400; color: oklch(30% 0.03 55);">공고 리스트</h1>
+      <p style="margin:0; font-size:13px; color:var(--muted);">LH · 청약홈 공고를 한 곳에서, 따뜻하게 확인하세요</p>
+    </div>
+
+    <div style="display:flex; align-items:flex-start; gap:24px;">
+
+      <div style="width:252px; flex-shrink:0; background:var(--surface); border-radius:18px; padding:22px; box-shadow: 0 6px 18px -10px oklch(55% 0.08 50 / 0.3);">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:18px;">
+          <div style="font-size:14px; font-weight:700;">필터</div>
+          <button class="reset-link" type="button" onClick="{{onReset}}">초기화</button>
+        </div>
+
+        <div class="filter-section">
+          <div class="field-label">지역</div>
+          <div style="display:flex; flex-direction:column; gap:10px;">
+            <sc-for list="{{regionOptions}}" as="opt" hint-placeholder-count="3">
+              <label class="check-row">
+                <input type="checkbox" checked="{{opt.checked}}" onChange="{{opt.onClick}}" />
+                {{opt.label}}
+              </label>
+            </sc-for>
+          </div>
+        </div>
+
+        <div class="filter-section">
+          <div class="field-label">거래유형</div>
+          <div style="display:flex; flex-direction:column; gap:10px;">
+            <sc-for list="{{dealTypeOptions}}" as="opt" hint-placeholder-count="4">
+              <label class="check-row">
+                <input type="checkbox" checked="{{opt.checked}}" onChange="{{opt.onClick}}" />
+                {{opt.label}}
+              </label>
+            </sc-for>
+          </div>
+        </div>
+
+        <div class="filter-section">
+          <div class="field-label">건물유형</div>
+          <div style="display:flex; flex-direction:column; gap:10px;">
+            <sc-for list="{{buildingTypeOptions}}" as="opt" hint-placeholder-count="4">
+              <label class="check-row">
+                <input type="checkbox" checked="{{opt.checked}}" onChange="{{opt.onClick}}" />
+                {{opt.label}}
+              </label>
+            </sc-for>
+          </div>
+        </div>
+
+        <div class="filter-section">
+          <div class="field-label">상태</div>
+          <div style="display:flex; flex-direction:column; gap:10px;">
+            <sc-for list="{{statusOptions}}" as="opt" hint-placeholder-count="3">
+              <label class="check-row">
+                <input type="checkbox" checked="{{opt.checked}}" onChange="{{opt.onClick}}" />
+                {{opt.label}}
+              </label>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+      <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:16px;">
+
+        <div class="search-wrap">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style="position:absolute; left:16px; top:50%; transform:translateY(-50%);">
+            <circle cx="11" cy="11" r="7" stroke="var(--muted-2)" stroke-width="2"/>
+            <path d="M20 20l-3.5-3.5" stroke="var(--muted-2)" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <input class="search-input" type="text" placeholder="공고명 검색" value="{{query}}" onChange="{{onQueryChange}}" />
+        </div>
+
+        <div style="font-size:13px; color:var(--muted); padding:0 4px;">총 {{resultCount}}건</div>
+
+        <div style="display:flex; flex-direction:column; gap:12px;">
+          <sc-for list="{{items}}" as="item" hint-placeholder-count="4">
+            <div class="card">
+              <div style="display:flex; flex-direction:column; gap:6px; flex-shrink:0;">
+                <span class="badge badge-status-{{item.statusVariant}}">{{item.status}}</span>
+                <span class="badge badge-type">{{item.typeGroup}}</span>
+              </div>
+              <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:4px;">
+                <div style="font-size:15px; font-weight:600; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{item.name}}</div>
+                <div style="font-size:12px; color:var(--muted);">{{item.regionLabel}} · {{item.buildingType}} · 출처 {{item.source}}</div>
+              </div>
+              <div style="width:170px; flex-shrink:0; text-align:right; font-size:12px; color:var(--muted);">{{item.postDate}} ~ {{item.closeDate}}</div>
+              <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+          </sc-for>
+
+          <sc-if value="{{isEmpty}}" hint-placeholder-val="false">
+            <div class="card" style="justify-content:center; color:var(--muted-2); font-size:14px; padding:56px 0;">조건에 맞는 공고가 없습니다. 필터를 조정해보세요.</div>
+          </sc-if>
+        </div>
+
+        <div style="display:flex; align-items:center; justify-content:center; gap:8px;">
+          <button class="page-btn" onClick="{{onPrev}}" type="button" style="opacity:{{prevOpacity}};">‹</button>
+          <sc-for list="{{pageButtons}}" as="p" hint-placeholder-count="3">
+            <button class="page-btn {{p.activeClass}}" onClick="{{p.onClick}}" type="button">{{p.n}}</button>
+          </sc-for>
+          <button class="page-btn" onClick="{{onNext}}" type="button" style="opacity:{{nextOpacity}};">›</button>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="notice">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style="flex-shrink:0; margin-top:2px;">
+        <circle cx="12" cy="12" r="9" stroke="var(--muted-2)" stroke-width="2"/>
+        <path d="M12 8v0.01M12 11v5" stroke="var(--muted)" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <div>현재 LH · 청약홈 공고를 제공합니다. SH · HUG 등 다른 기관 공고는 아직 준비 중이며, 필요하실 경우 해당 기관 홈페이지에서 확인해 주세요.</div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script data-dc-script data-props='{"accent":{"editor":"color","default":"#c9784a"}}'>
+const ANNOUNCEMENTS = [
+  { id:'a1', name:'성남 위례 A1-5BL 행복주택 임차인 모집공고', regionCode:'41', regionLabel:'경기 성남', typeGroup:'임대주택', buildingType:'아파트', status:'접수중', postDate:'2026.07.01', closeDate:'2026.08.29', source:'LH' },
+  { id:'a2', name:'강동 고덕강일 3단지 국민임대주택 예비입주자 모집공고', regionCode:'11', regionLabel:'서울 강동', typeGroup:'임대주택', buildingType:'아파트', status:'공고중', postDate:'2026.08.10', closeDate:'2026.09.20', source:'LH' },
+  { id:'a3', name:'인천 검단 AA19블록 신혼희망타운 입주자 모집공고', regionCode:'28', regionLabel:'인천 서구', typeGroup:'신혼희망타운', buildingType:'아파트', status:'접수마감', postDate:'2026.05.02', closeDate:'2026.06.10', source:'LH' },
+  { id:'a4', name:'화성 동탄2 A94블록 공공분양주택 입주자모집공고', regionCode:'41', regionLabel:'경기 화성', typeGroup:'분양주택', buildingType:'아파트', status:'접수중', postDate:'2026.07.20', closeDate:'2026.08.25', source:'청약홈' },
+  { id:'a5', name:'서울 마곡 R2블록 주거급여수급자 매입임대주택 공급공고', regionCode:'11', regionLabel:'서울 강서', typeGroup:'주거복지', buildingType:'빌라·다세대', status:'공고중', postDate:'2026.08.05', closeDate:'2026.09.15', source:'LH' },
+  { id:'a6', name:'인천 송도 6공구 국민임대주택 예비입주자 모집공고', regionCode:'28', regionLabel:'인천 연수', typeGroup:'임대주택', buildingType:'아파트', status:'접수마감', postDate:'2026.04.11', closeDate:'2026.05.20', source:'LH' },
+  { id:'a7', name:'하남 교산 B2블록 신혼희망타운 사전청약 공고', regionCode:'41', regionLabel:'경기 하남', typeGroup:'신혼희망타운', buildingType:'아파트', status:'접수중', postDate:'2026.08.01', closeDate:'2026.09.05', source:'LH' },
+  { id:'a8', name:'서울 노원 상계 5단지 행복주택 임차인 모집공고', regionCode:'11', regionLabel:'서울 노원', typeGroup:'임대주택', buildingType:'아파트', status:'공고중', postDate:'2026.08.18', closeDate:'2026.09.30', source:'LH' },
+  { id:'a9', name:'광명 학온 A3블록 공공분양 사전청약 공고', regionCode:'41', regionLabel:'경기 광명', typeGroup:'분양주택', buildingType:'아파트', status:'접수중', postDate:'2026.07.28', closeDate:'2026.08.31', source:'청약홈' },
+  { id:'a10', name:'부천 대장 B4블록 든든전세주택 입주자 모집공고', regionCode:'41', regionLabel:'경기 부천', typeGroup:'임대주택', buildingType:'오피스텔', status:'접수마감', postDate:'2026.03.15', closeDate:'2026.04.20', source:'LH' },
+];
+
+function statusVariantOf(status) {
+  if (status === '접수중') return 'open';
+  if (status === '접수마감') return 'closed';
+  return 'upcoming';
+}
+
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { regions: [], dealTypes: [], buildingTypes: [], statuses: [], query: '', page: 1 };
+  }
+
+  toggle(key, value) {
+    const cur = this.state[key];
+    const next = cur.includes(value) ? cur.filter((v) => v !== value) : [...cur, value];
+    this.setState({ [key]: next, page: 1 });
+  }
+
+  reset() {
+    this.setState({ regions: [], dealTypes: [], buildingTypes: [], statuses: [], query: '', page: 1 });
+  }
+
+  renderVals() {
+    const accent = this.props.accent || '#c9784a';
+    const s = this.state;
+
+    const makeGroup = (key, list) => list.map((o) => ({
+      label: o.label,
+      checked: s[key].includes(o.value),
+      onClick: () => this.toggle(key, o.value),
+    }));
+
+    const regionOptions = makeGroup('regions', [
+      { value: '11', label: '서울' },
+      { value: '28', label: '인천' },
+      { value: '41', label: '경기' },
+    ]);
+
+    const dealTypeOptions = makeGroup('dealTypes', [
+      { value: '분양주택', label: '분양주택' },
+      { value: '임대주택', label: '임대주택' },
+      { value: '주거복지', label: '주거복지' },
+      { value: '신혼희망타운', label: '신혼희망타운' },
+    ]);
+
+    const buildingTypeOptions = makeGroup('buildingTypes', [
+      { value: '아파트', label: '아파트' },
+      { value: '빌라·다세대', label: '빌라·다세대' },
+      { value: '오피스텔', label: '오피스텔' },
+      { value: '단독주택', label: '단독주택' },
+    ]);
+
+    const statusOptions = makeGroup('statuses', [
+      { value: '공고중', label: '공고중' },
+      { value: '접수중', label: '접수중' },
+      { value: '접수마감', label: '접수마감' },
+    ]);
+
+    const q = s.query.trim();
+    const filtered = ANNOUNCEMENTS.filter((a) =>
+      (s.regions.length === 0 || s.regions.includes(a.regionCode)) &&
+      (s.dealTypes.length === 0 || s.dealTypes.includes(a.typeGroup)) &&
+      (s.buildingTypes.length === 0 || s.buildingTypes.includes(a.buildingType)) &&
+      (s.statuses.length === 0 || s.statuses.includes(a.status)) &&
+      (q === '' || a.name.indexOf(q) !== -1)
+    );
+    const sorted = filtered.slice().sort((a, b) => (a.closeDate < b.closeDate ? -1 : 1));
+
+    const pageSize = 4;
+    const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
+    const page = Math.min(s.page, totalPages);
+
+    const items = sorted.slice((page - 1) * pageSize, page * pageSize).map((a) => ({
+      ...a,
+      statusVariant: statusVariantOf(a.status),
+    }));
+
+    const pageButtons = Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => ({
+      n,
+      activeClass: n === page ? 'active' : '',
+      onClick: () => this.setState({ page: n }),
+    }));
+
+    return {
+      accent,
+      regionOptions,
+      dealTypeOptions,
+      buildingTypeOptions,
+      statusOptions,
+      query: s.query,
+      onQueryChange: (e) => this.setState({ query: e.target.value, page: 1 }),
+      onReset: () => this.reset(),
+      resultCount: sorted.length,
+      items,
+      isEmpty: items.length === 0,
+      pageButtons,
+      prevOpacity: page > 1 ? '1' : '0.35',
+      nextOpacity: page < totalPages ? '1' : '0.35',
+      onPrev: () => this.setState({ page: Math.max(1, page - 1) }),
+      onNext: () => this.setState({ page: Math.min(totalPages, page + 1) }),
+    };
+  }
+}
+</script>
+</body>
+</html>

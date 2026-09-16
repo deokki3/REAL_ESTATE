@@ -1,0 +1,175 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;500;600;700&display=swap">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: 'Noto Sans KR', system-ui, -apple-system, "Malgun Gothic", sans-serif; background: var(--bg); color: var(--text); }
+    .heading { font-family: 'Gowun Dodum', 'Noto Sans KR', sans-serif; }
+    a { color: var(--accent); }
+
+    .badge { display:inline-flex; align-items:center; justify-content:center; padding:3px 11px; border-radius:999px; font-size:11.5px; font-weight:600; white-space:nowrap; }
+    .badge-type { background: var(--tint); color: var(--muted); }
+    .badge-status-open { background: color-mix(in oklch, var(--accent) 16%, white); color: color-mix(in oklch, var(--accent) 70%, black 10%); }
+    .badge-status-upcoming { background: var(--tint); color:var(--muted); }
+    .badge-status-closed { background: var(--closed-bg); color:var(--muted-2); }
+
+    .card { background:var(--surface); border-radius:18px; padding:28px 32px; box-shadow: 0 6px 18px -10px oklch(55% 0.08 50 / 0.3); }
+    .card-title { font-size:13px; font-weight:700; color:var(--text); margin-bottom:20px; }
+
+    .tl-dot { width:14px; height:14px; border-radius:50%; border:2px solid var(--border); background:#fff; flex-shrink:0; }
+    .tl-dot.done { border-color: var(--accent); background: var(--accent); }
+    .tl-dot.current { border-color: var(--accent); background:#fff; }
+    .tl-line { height:2px; background:var(--border); flex:1; }
+    .tl-line.done { background: var(--accent); }
+
+    table { width:100%; border-collapse:collapse; font-size:13px; }
+    th { text-align:right; padding:10px 8px; color:var(--muted); font-weight:600; border-bottom:1px solid var(--border); }
+    th:first-child { text-align:left; }
+    td { padding:12px 8px; text-align:right; border-bottom:1px solid var(--border); color:var(--text); }
+    td:first-child { text-align:left; font-weight:600; }
+    tr.selected td { background: color-mix(in oklch, var(--accent) 10%, white); }
+    tr { cursor:pointer; }
+
+    .btn-fill { display:inline-flex; align-items:center; gap:8px; padding:12px 22px; border-radius:999px; border:none; color:#fff; background:var(--accent); font-size:14px; font-weight:600; cursor:pointer; font-family:inherit; }
+    .btn-fill:hover { filter:brightness(1.05); }
+
+    .notice { display:flex; gap:10px; border-radius:16px; padding:16px 22px; background: var(--tint); color:var(--muted); font-size:13px; line-height:1.6; }
+  </style>
+</helmet>
+
+<div style="--bg: oklch(97% 0.018 75); --surface:#ffffff; --tint: oklch(94% 0.02 75); --text: oklch(28% 0.02 60); --muted: oklch(50% 0.02 60); --muted-2: oklch(65% 0.018 65); --border: oklch(90% 0.015 70); --closed-bg: oklch(93% 0.012 70); --accent: {{accent}}; min-height:100%; width:100%;">
+  <div style="max-width:900px; margin:0 auto; padding:36px 32px 56px; display:flex; flex-direction:column; gap:20px;">
+
+    <div style="font-size:12px; color:var(--muted-2);">공고 목록 &nbsp;›&nbsp; 공고 상세</div>
+
+    <div>
+      <div style="display:flex; gap:8px; margin-bottom:14px;">
+        <span class="badge badge-status-{{header.statusVariant}}">{{header.status}}</span>
+        <span class="badge badge-type">{{header.typeLabel}}</span>
+      </div>
+      <h1 class="heading" style="font-size:25px; font-weight:400; margin:0 0 8px; line-height:1.5; color: oklch(30% 0.03 55);">{{header.name}}</h1>
+      <div style="font-size:13px; color:var(--muted);">{{header.regionLabel}} · 출처 {{header.source}}</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">공고 일정</div>
+      <div style="display:flex; align-items:center; padding:0 4px;">
+        <div class="tl-dot done"></div>
+        <div class="tl-line done"></div>
+        <div class="tl-dot done"></div>
+        <div class="tl-line"></div>
+        <div class="tl-dot current"></div>
+      </div>
+      <div style="display:flex; padding:0 4px; margin-top:10px;">
+        <div style="width:14px; flex-shrink:0; position:relative;">
+          <div style="position:absolute; left:-38px; top:0; width:90px; font-size:12px; color:var(--muted);">공고게시일<br>{{header.postDate}}</div>
+        </div>
+        <div style="flex:1;"></div>
+        <div style="width:14px; flex-shrink:0; position:relative;">
+          <div style="position:absolute; left:-38px; top:0; width:90px; font-size:12px; color:var(--muted);">모집공고일<br>{{header.noticeDate}}</div>
+        </div>
+        <div style="flex:1;"></div>
+        <div style="width:14px; flex-shrink:0; position:relative;">
+          <div style="position:absolute; right:-38px; top:0; width:90px; font-size:12px; color:var(--muted);">접수마감<br>{{header.closeDate}}</div>
+        </div>
+      </div>
+      <div style="margin-top:44px; font-size:12px; color:var(--muted-2);">오늘 기준({{header.today}}) 접수 진행 중입니다.</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">주택형별 공급 정보</div>
+      <table>
+        <thead>
+          <tr>
+            <th>주택형</th>
+            <th>전용면적(㎡)</th>
+            <th>공급면적(㎡)</th>
+            <th>보증금(만원)</th>
+            <th>월세(만원)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <sc-for list="{{houseTypes}}" as="h" hint-placeholder-count="3">
+            <tr class="{{h.rowClass}}" onClick="{{h.onClick}}">
+              <td>{{h.type}}</td>
+              <td>{{h.exclusiveArea}}</td>
+              <td>{{h.supplyArea}}</td>
+              <td>{{h.deposit}}</td>
+              <td>{{h.rent}}</td>
+            </tr>
+          </sc-for>
+        </tbody>
+      </table>
+    </div>
+
+    <div>
+      <button class="btn-fill" type="button">
+        LH 청약센터에서 원문 공고 보기
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+          <path d="M7 17L17 7M9 7h8v8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="notice">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style="flex-shrink:0; margin-top:2px;">
+        <circle cx="12" cy="12" r="9" stroke="var(--muted-2)" stroke-width="2"/>
+        <path d="M12 8v0.01M12 11v5" stroke="var(--muted)" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <div>이 페이지는 LH 공고 원문을 정리한 참고 정보입니다. 신청 자격 · 제출 서류 등 정확한 내용은 반드시 원문 공고를 확인하세요. (데이터 출처: LH 한국토지주택공사)</div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script data-dc-script data-props='{"accent":{"editor":"color","default":"#c9784a"}}'>
+const HOUSE_TYPES = [
+  { type: '39A', exclusiveArea: '39.98', supplyArea: '56.20', deposit: '6,300', rent: '12.8' },
+  { type: '39B', exclusiveArea: '39.72', supplyArea: '55.60', deposit: '6,150', rent: '12.5' },
+  { type: '46A', exclusiveArea: '46.51', supplyArea: '64.30', deposit: '7,400', rent: '14.9' },
+];
+
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { selectedType: '39A' };
+  }
+
+  renderVals() {
+    const accent = this.props.accent || '#c9784a';
+    const s = this.state;
+
+    const houseTypes = HOUSE_TYPES.map((h) => ({
+      ...h,
+      rowClass: s.selectedType === h.type ? 'selected' : '',
+      onClick: () => this.setState({ selectedType: h.type }),
+    }));
+
+    return {
+      accent,
+      header: {
+        status: '접수중',
+        statusVariant: 'open',
+        typeLabel: '임대주택 · 행복주택',
+        name: '성남 위례 A1-5BL 행복주택 임차인 모집공고',
+        regionLabel: '경기 성남시 수정구',
+        source: 'LH',
+        postDate: '2026.07.01',
+        noticeDate: '2026.07.15',
+        closeDate: '2026.08.29',
+        today: '2026.08.19',
+      },
+      houseTypes,
+    };
+  }
+}
+</script>
+</body>
+</html>

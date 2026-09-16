@@ -27,6 +27,13 @@ export const env = {
     decodedKey: process.env.DATA_GO_KR_KEY_DECODED ?? '',
     keyMode: (process.env.DATA_GO_KR_KEY_MODE ?? 'DECODED') as KeyMode,
   },
+
+  /**
+   * 온디맨드 수집 API(/api/ingest/lh) 호출을 막는 공유키. v1은 회원 인증이 없어서(11절)
+   * 배포 시 아무나 이 엔드포인트를 두드려 공공데이터포털 일일 호출량을 소진시키지 못하게
+   * 최소한의 방어로 둔다. 비어 있으면 그 엔드포인트 자체를 막는다 — ingest.controller.ts 참고.
+   */
+  adminIngestKey: process.env.ADMIN_INGEST_KEY ?? '',
 } as const;
 
 export const isProduction = env.nodeEnv === 'production';

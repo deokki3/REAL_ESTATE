@@ -31,6 +31,24 @@ function parseNumeric(value: string): number | null {
   return Number.isFinite(n) ? n : null
 }
 
+/**
+ * 헤더가 여러 줄에 걸쳐 병합된 경우("면적(㎡)" 아래에 "전용"/"공용"이 따로 있는 식)를 지원한다.
+ * 시작~끝 행 범위 안에서 컬럼마다 가장 아래(가장 구체적인) 비어있지 않은 셀을 라벨로 쓰고,
+ * 그 범위 안에 아무 것도 없으면 위쪽 행 값으로 대체한다.
+ */
+function mergeHeaderRange(rows: string[][], startIndex: number, endIndex: number, columnCount: number): string[] {
+  const labels: string[] = []
+  for (let col = 0; col < columnCount; col += 1) {
+    let label = ''
+    for (let row = startIndex; row <= endIndex; row += 1) {
+      const cell = rows[row]?.[col]?.trim() ?? ''
+      if (cell !== '') label = cell
+    }
+    labels.push(label !== '' ? label : `열${col + 1}`)
+  }
+  return labels
+}
+
 /** 컬럼 값 대부분이 숫자로 파싱되면 숫자 정렬, 아니면 문자열 정렬을 쓴다. */
 function isNumericColumn(rows: string[][], columnIndex: number): boolean {
   const values = rows.map((r) => r[columnIndex] ?? '').filter((v) => v.trim() !== '')
@@ -42,7 +60,8 @@ function isNumericColumn(rows: string[][], columnIndex: number): boolean {
 export function ExcelViewerPage() {
   const [fileName, setFileName] = useState<string | null>(null)
   const [rawRows, setRawRows] = useState<string[][] | null>(null)
-  const [headerRowNumber, setHeaderRowNumber] = useState(1)
+  const [headerRowStart, setHeaderRowStart] = useState(1)
+  const [headerRowEnd, setHeaderRowEnd] = useState(1)
   const [sort, setSort] = useState<SortState | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -63,7 +82,9 @@ export function ExcelViewerPage() {
       const rows = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, defval: '' })
       const stringRows = rows.map((row) => row.map((cell) => String(cell ?? '').trim()))
       setRawRows(stringRows)
-      setHeaderRowNumber(guessHeaderRowIndex(stringRows) + 1)
+      const guessed = guessHeaderRowIndex(stringRows) + 1
+      setHeaderRowStart(guessed)
+      setHeaderRowEnd(guessed)
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err))
       setRawRows(null)
@@ -72,12 +93,13 @@ export function ExcelViewerPage() {
 
   const { columns, dataRows } = useMemo(() => {
     if (!rawRows) return { columns: [] as string[], dataRows: [] as string[][] }
-    const headerIndex = Math.min(Math.max(headerRowNumber - 1, 0), rawRows.length - 1)
-    const headerRow = rawRows[headerIndex] ?? []
-    const cols = headerRow.map((label, i) => (label.trim() !== '' ? label : `열${i + 1}`))
-    const body = rawRows.slice(headerIndex + 1).filter((row) => row.some((cell) => cell.trim() !== ''))
+    const startIndex = Math.min(Math.max(headerRowStart - 1, 0), rawRows.length - 1)
+    const endIndex = Math.min(Math.max(headerRowEnd - 1, startIndex), rawRows.length - 1)
+    const columnCount = Math.max(...rawRows.map((r) => r.length), 0)
+    const cols = mergeHeaderRange(rawRows, startIndex, endIndex, columnCount)
+    const body = rawRows.slice(endIndex + 1).filter((row) => row.some((cell) => cell.trim() !== ''))
     return { columns: cols, dataRows: body }
-  }, [rawRows, headerRowNumber])
+  }, [rawRows, headerRowStart, headerRowEnd])
 
   const sortedRows = useMemo(() => {
     if (!sort) return dataRows
@@ -134,20 +156,41 @@ export function ExcelViewerPage() {
           {fileName && <div className="text-xs text-[var(--muted)]">불러온 파일: {fileName}</div>}
 
           {rawRows && (
-            <label className="flex items-center gap-2">
-              <span className="text-[13px] font-semibold text-[var(--text)]">헤더 행 번호</span>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[13px] font-semibold text-[var(--text)]">헤더 행 범위</span>
               <input
                 type="number"
                 min={1}
                 max={rawRows.length}
-                value={headerRowNumber}
-                onChange={(e) => setHeaderRowNumber(Number(e.target.value) || 1)}
-                className="w-20 rounded-lg border border-[var(--border)] bg-white px-2 py-1 text-[13px] focus:border-[var(--accent)] focus:outline-none"
+                value={headerRowStart}
+                onChange={(e) => {
+                  const v = Number(e.target.value) || 1
+                  setHeaderRowStart(v)
+                  setHeaderRowEnd((prev) => Math.max(prev, v))
+                }}
+                className="w-16 rounded-lg border border-[var(--border)] bg-white px-2 py-1 text-[13px] focus:border-[var(--accent)] focus:outline-none"
               />
+              <span className="text-xs text-[var(--muted-2)]">~</span>
+              <input
+                type="number"
+                min={headerRowStart}
+                max={rawRows.length}
+                value={headerRowEnd}
+                onChange={(e) => setHeaderRowEnd(Math.max(headerRowStart, Number(e.target.value) || headerRowStart))}
+                className="w-16 rounded-lg border border-[var(--border)] bg-white px-2 py-1 text-[13px] focus:border-[var(--accent)] focus:outline-none"
+              />
+              <button
+                type="button"
+                onClick={() => setHeaderRowEnd((prev) => Math.min(rawRows.length, prev + 1))}
+                className="rounded-full border border-[var(--border)] bg-white px-3 py-1 text-xs font-semibold text-[var(--muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
+              >
+                다음 줄과 합치기
+              </button>
               <span className="text-xs text-[var(--muted-2)]">
-                열 제목이 이상하면 실제 제목이 있는 행 번호로 바꿔보세요 (자동으로 추정한 값입니다).
+                열 제목이 이상하면 범위를 조정하세요. "면적" 위에 "전용"/"공용"처럼 제목이 두 줄에 나뉜
+                엑셀은 끝 행을 한 줄 늘리면 두 줄이 합쳐집니다 (자동 추정은 시작=끝 한 줄입니다).
               </span>
-            </label>
+            </div>
           )}
 
           {error && <div className="text-sm text-red-600">파일을 읽지 못했습니다: {error}</div>}
@@ -193,7 +236,7 @@ export function ExcelViewerPage() {
 
         {rawRows && dataRows.length === 0 && (
           <div className="rounded-[18px] bg-[var(--surface)] py-14 text-center text-sm text-[var(--muted-2)]">
-            헤더 행 아래에 데이터가 없습니다. 헤더 행 번호를 확인해보세요.
+            헤더 행 아래에 데이터가 없습니다. 헤더 행 범위를 확인해보세요.
           </div>
         )}
       </div>

@@ -4,6 +4,7 @@ import { AnnouncementListPage } from './features/announcements/AnnouncementListP
 import { AnnouncementDetailPage } from './features/announcements/AnnouncementDetailPage'
 import { LeaseCalculatorPage } from './features/calculator/LeaseCalculatorPage'
 import { SaleCalculatorPage } from './features/calculator/SaleCalculatorPage'
+import { ExcelViewerPage } from './features/excel-viewer/ExcelViewerPage'
 
 function App() {
   return (
@@ -13,6 +14,7 @@ function App() {
         <Route path="/announcements/:id" element={<AnnouncementDetailPage />} />
         <Route path="/calculator/lease" element={<LeaseCalculatorPage />} />
         <Route path="/calculator/sale" element={<SaleCalculatorPage />} />
+        <Route path="/excel-viewer" element={<ExcelViewerPage />} />
       </Route>
     </Routes>
   )

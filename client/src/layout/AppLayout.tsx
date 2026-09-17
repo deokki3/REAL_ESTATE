@@ -32,6 +32,12 @@ export function AppLayout() {
             >
               매매·분양 계산기
             </NavLink>
+            <NavLink
+              to="/excel-viewer"
+              className={({ isActive }) => `${linkBase} ${isActive ? linkActive : linkInactive}`}
+            >
+              엑셀 뷰어
+            </NavLink>
           </nav>
         </div>
       </header>

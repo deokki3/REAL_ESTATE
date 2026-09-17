@@ -67,8 +67,13 @@ export async function searchAnnouncements(
     filter.closingAt = criteria.statuses[0] === 'open' ? { $gte: now } : { $lt: now };
   }
 
+  // 최신순(게시일 내림차순) 고정 — 같은 게시일이면 _id로 순서를 고정해 페이지네이션이 흔들리지 않게 한다.
   const [docs, total] = await Promise.all([
-    AnnouncementModel.find(filter).sort({ closingAt: 1 }).skip((page - 1) * pageSize).limit(pageSize).lean(),
+    AnnouncementModel.find(filter)
+      .sort({ postedAt: -1, _id: -1 })
+      .skip((page - 1) * pageSize)
+      .limit(pageSize)
+      .lean(),
     AnnouncementModel.countDocuments(filter),
   ]);
 
